@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Feito por Criis</title>
+  <title>BRILHOS</title>
 
   <style>
     html, body {
@@ -69,11 +69,11 @@
 
     #download { display: none; }
 
-    /* Definição do estilo das partículas de brilho */
+    /* Estilo das partículas de brilho */
     .brilho {
       position: absolute;
       pointer-events: none;
-      background-size: contain; /* Ajusta a imagem dentro da partícula */
+      background-size: contain;
       background-repeat: no-repeat;
       transition: all 0.3s ease-out;
     }
@@ -108,43 +108,44 @@
     let stream = null;
     let usingFront = true;
     let usingFrame2 = false;
-
     let brilhos = [];
 
     // Função para criar a partícula de brilho com a imagem
     function criarBrilho() {
-      const brilho = document.createElement("div");
-      brilho.classList.add("brilho");
+      if (brilhos.length < 10) { // Limita a quantidade de brilhos na tela para no máximo 10
+        const brilho = document.createElement("div");
+        brilho.classList.add("brilho");
 
-      // Adiciona a imagem de brilho
-      brilho.style.backgroundImage = "url('brilho.png')"; // Coloque o caminho da sua imagem de brilho
+        // Adiciona a imagem de brilho
+        brilho.style.backgroundImage = "url('brilho.png')"; // Coloque o caminho da sua imagem de brilho
 
-      // Definir o tamanho da partícula
-      const size = Math.random() * 20 + 10;  // Tamanho aleatório entre 10 e 30px
-      brilho.style.width = `${size}px`;
-      brilho.style.height = `${size}px`;
+        // Definir o tamanho da partícula
+        const size = Math.random() * 20 + 10;  // Tamanho aleatório entre 10 e 30px
+        brilho.style.width = `${size}px`;
+        brilho.style.height = `${size}px`;
 
-      // Inicializar a posição da partícula
-      brilho.style.left = `${Math.random() * 100}%`;
-      brilho.style.top = `${Math.random() * 100}%`;
-      brilho.style.opacity = Math.random() * 0.5 + 0.5; // Opacidade aleatória
+        // Inicializar a posição da partícula
+        brilho.style.left = `${Math.random() * 100}%`;
+        brilho.style.top = `${Math.random() * 100}%`;
+        brilho.style.opacity = Math.random() * 0.5 + 0.5; // Opacidade aleatória
 
-      brilhoContainer.appendChild(brilho);
+        brilhoContainer.appendChild(brilho);
 
-      // Adiciona a partícula ao array para controle
-      brilhos.push({
-        element: brilho,
-        top: parseFloat(brilho.style.top),
-        left: parseFloat(brilho.style.left),
-        dx: (Math.random() - 0.5) * 0.2, // Velocidade horizontal reduzida
-        dy: (Math.random() - 0.5) * 0.2, // Velocidade vertical reduzida
-        size: size
-      });
+        // Adiciona a partícula ao array para controle
+        brilhos.push({
+          element: brilho,
+          top: parseFloat(brilho.style.top),
+          left: parseFloat(brilho.style.left),
+          dx: (Math.random() - 0.5) * 0.05, // Velocidade horizontal muito lenta
+          dy: (Math.random() - 0.5) * 0.05, // Velocidade vertical muito lenta
+          size: size
+        });
+      }
     }
 
     // Função para remover brilhos antigos (quando atingem o limite)
     function removerBrilhos() {
-      if (brilhos.length > 50) { // Reduzindo a quantidade de brilhos na tela
+      if (brilhos.length > 10) { // Garantir que o número de brilhos não ultrapasse 10
         const brilhoRemovido = brilhos.shift();
         brilhoRemovido.element.remove();
       }
@@ -164,15 +165,18 @@
 
         brilho.element.style.top = `${brilho.top}%`;
         brilho.element.style.left = `${brilho.left}%`;
-
-        // Cria partículas novas a cada intervalo (menos frequente)
-        if (Math.random() < 0.005) { // Menos partículas por vez
-          criarBrilho();
-        }
       });
 
-      requestAnimationFrame(animarBrilhos);
+      requestAnimationFrame(animarBrilhos); // Anima as partículas em loop
     }
+
+    // Inicializa a animação das partículas
+    setInterval(() => {
+      criarBrilho(); // Cria um novo brilho a cada 1.5 segundos
+      removerBrilhos(); // Remover brilhos antigos se o número ultrapassar 10
+    }, 1500);  // Intervalo de 1.5 segundos para criar brilhos (ajuste para menos ou mais)
+
+    animarBrilhos(); // Começa a animação das partículas
 
     // Função para começar a câmera
     async function startCamera(){
@@ -221,14 +225,6 @@
       }
     });
 
-    // Inicializa a animação das partículas
-    setInterval(() => {
-      criarBrilho();
-      removerBrilhos();
-    }, 1000);  // Intervalo maior entre as partículas (reduzindo a quantidade)
-
-    animarBrilhos(); // Começa a animação das partículas
-
     snapBtn.addEventListener("click", async () => {
       await waitForVideoReady();
 
@@ -274,14 +270,14 @@
       btx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
       btx.restore();
 
-      ctx.drawImage(buffer, 0, 0);
-
+      // Desenha a moldura
       if (usingFrame2) {
         ctx.drawImage(frame2, 0, 0, targetW, targetH);
       } else {
         ctx.drawImage(frame, 0, 0, targetW, targetH);
       }
 
+      // Salvar
       const img = canvas.toDataURL("image/png");
       download.href = img;
       download.click();
