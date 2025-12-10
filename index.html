@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>BRIIIIIIIILHOS</title>
+  <title>briiiilhinhos</title>
 
   <style>
     html, body {
@@ -109,11 +109,11 @@
     let usingFront = true;
     let usingFrame2 = false;
     let brilhos = [];
-    let brilhosAtivos = true; // A variável brilhosAtivos é definida como true para iniciar a animação de brilhos
+    let brilhosAtivos = true; // Brilhos começam ativos
 
     // Função para criar a partícula de brilho com a imagem
     function criarBrilho() {
-      if (brilhos.length < 10 && brilhosAtivos) { // Limita a quantidade de brilhos na tela para no máximo 10
+      if (brilhos.length < 10 && brilhosAtivos) {
         const brilho = document.createElement("div");
         brilho.classList.add("brilho");
 
@@ -239,16 +239,19 @@
       const targetW = 720;
       const targetH = 1280;
 
+      // Canvas para salvar a imagem final
       const canvas = document.createElement("canvas");
       canvas.width = targetW;
       canvas.height = targetH;
       const ctx = canvas.getContext("2d");
 
+      // Canvas temporário para a câmera
       const buffer = document.createElement("canvas");
       buffer.width = targetW;
       buffer.height = targetH;
       const btx = buffer.getContext("2d");
 
+      // Desenha o vídeo no buffer
       btx.save();
       if (usingFront) {
         btx.translate(targetW, 0);
@@ -281,6 +284,11 @@
       } else {
         ctx.drawImage(frame, 0, 0, targetW, targetH);
       }
+
+      // Desenha os brilhos no canvas final
+      brilhos.forEach((brilho) => {
+        ctx.drawImage(brilho.element, brilho.left, brilho.top, brilho.size, brilho.size);
+      });
 
       // Salvar a imagem
       const img = canvas.toDataURL("image/png");
