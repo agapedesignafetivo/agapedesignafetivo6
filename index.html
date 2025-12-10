@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>BOTÕES COM LUT</title>
+  <title>Câmera com LUT e Moldura</title>
 
   <style>
     html, body {
@@ -24,14 +24,12 @@
       background: black;
     }
 
-    video {
+    canvas {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      background: black;
-      display: none; /* escondemos o vídeo, vamos desenhar direto no canvas */
     }
 
     #frame {
@@ -71,127 +69,144 @@
 </head>
 <body>
 
-  <div id="camera-wrap">
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
-    <img id="frame" src="moldura.png">
-  </div>
+<div id="camera-wrap">
+  <video id="video" autoplay playsinline muted style="display:none;"></video>
+  <canvas id="canvas"></canvas>
+  <img id="frame" src="moldura.png">
+</div>
 
-  <div id="buttons">
-    <img id="switchBtn" class="icon-btn" src="trocarcamera.png" title="Trocar câmera">
-    <img id="snapBtn" class="icon-btn" src="tirarfoto.png" title="Tirar Foto">
-  </div>
+<div id="buttons">
+  <img id="switchBtn" class="icon-btn" src="trocarcamera.png" title="Trocar câmera">
+  <img id="snapBtn" class="icon-btn" src="tirarfoto.png" title="Tirar Foto">
+</div>
 
-  <a id="download" download="fotomoldurapersonalizada.png"></a>
+<a id="download" download="fotomoldurapersonalizada.png"></a>
 
-  <script>
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const frame = document.getElementById("frame");
-    const snapBtn = document.getElementById("snapBtn");
-    const switchBtn = document.getElementById("switchBtn");
-    const download = document.getElementById("download");
+<script type="module">
+  import * as twgl from 'https://cdn.jsdelivr.net/npm/twgl.js@4.21.3/dist/4.x/twgl-full.module.js';
 
-    let stream = null;
-    let usingFront = true;
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const ctx2d = canvas.getContext('2d');
+  const frame = document.getElementById('frame');
+  const snapBtn = document.getElementById('snapBtn');
+  const switchBtn = document.getElementById('switchBtn');
+  const download = document.getElementById('download');
 
-    // Carregar LUT
-    const lutImg = new Image();
-    lutImg.src = "lut.png";
-    let lutCanvas = document.createElement("canvas");
-    let lutCtx = lutCanvas.getContext("2d");
-    let lutLoaded = false;
+  let usingFront = true;
+  let stream = null;
 
-    lutImg.onload = () => {
-      lutCanvas.width = lutImg.width;
-      lutCanvas.height = lutImg.height;
-      lutCtx.drawImage(lutImg, 0, 0);
-      lutLoaded = true;
-      console.log("LUT carregado!");
-    }
+  async function startCamera() {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    const constraints = { video: { facingMode: usingFront ? "user" : "environment" } };
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
 
-    async function startCamera() {
-      if (stream) stream.getTracks().forEach(t => t.stop());
+    video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
 
-      const constraints = { video: { facingMode: usingFront ? "user" : "environment" } };
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      video.srcObject = stream;
+    await new Promise(r => video.onloadedmetadata = r);
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-      // Espelhamento apenas no preview
-      video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
-      await waitForVideoReady();
+    drawLoop();
+  }
 
-      // Ajustar canvas
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      requestAnimationFrame(drawFrame);
-    }
-
-    function waitForVideoReady(){
-      return new Promise(resolve => {
-        if(video.readyState >= 2 && video.videoWidth > 0){
-          resolve();
-          return;
-        }
-        video.onloadedmetadata = () => resolve();
-      });
-    }
-
-    // Trocar câmera
-    switchBtn.addEventListener("click", () => {
-      usingFront = !usingFront;
-      startCamera();
-    });
-
-    // Função para aplicar LUT simples
-    function applyLUT(imageData){
-      if(!lutLoaded) return imageData;
-      const data = imageData.data;
-      const lutData = lutCtx.getImageData(0,0,lutCanvas.width,lutCanvas.height).data;
-
-      for(let i=0; i<data.length; i+=4){
-        const r = data[i];
-        const g = data[i+1];
-        const b = data[i+2];
-
-        // Mapear r,g,b de 0-255 para coordenadas do LUT
-        const x = Math.floor(r / 255 * (lutCanvas.width - 1));
-        const y = Math.floor(g / 255 * (lutCanvas.height - 1));
-        const index = (y * lutCanvas.width + x) * 4;
-
-        data[i] = lutData[index];       // R
-        data[i+1] = lutData[index+1];   // G
-        data[i+2] = lutData[index+2];   // B
-        // alpha permanece
-      }
-      return imageData;
-    }
-
-    // Desenhar vídeo + LUT + frame
-    function drawFrame(){
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      // Aplicar LUT
-      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-      ctx.putImageData(applyLUT(imgData), 0, 0);
-
-      // Desenhar moldura
-      ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-
-      requestAnimationFrame(drawFrame);
-    }
-
-    // Tirar foto com LUT + moldura
-    snapBtn.addEventListener("click", () => {
-      const img = canvas.toDataURL("image/png");
-      download.href = img;
-      download.click();
-    });
-
+  switchBtn.addEventListener('click', () => {
+    usingFront = !usingFront;
     startCamera();
-  </script>
+  });
+
+  // --- WebGL LUT setup ---
+  const gl = canvas.getContext('webgl');
+  if(!gl){ alert("WebGL não disponível"); }
+
+  let programInfo, bufferInfo, textureVideo, textureLUT;
+
+  const vertexShaderSrc = `
+    attribute vec4 position;
+    attribute vec2 texcoord;
+    varying vec2 v_texcoord;
+    void main() {
+      gl_Position = position;
+      v_texcoord = texcoord;
+    }
+  `;
+
+  const fragmentShaderSrc = `
+    precision mediump float;
+    varying vec2 v_texcoord;
+    uniform sampler2D u_video;
+    uniform sampler2D u_lut;
+    void main() {
+      vec4 color = texture2D(u_video, v_texcoord);
+      float blueColor = color.b * 63.0;
+
+      vec2 quad1;
+      quad1.y = floor(floor(blueColor) / 8.0);
+      quad1.x = floor(blueColor) - (quad1.y * 8.0);
+
+      vec2 quad2;
+      quad2.y = floor(ceil(blueColor) / 8.0);
+      quad2.x = ceil(blueColor) - (quad2.y * 8.0);
+
+      vec2 texPos1;
+      texPos1.x = (quad1.x * 0.125) + 0.5/512.0 + ((color.r) * 0.125);
+      texPos1.y = (quad1.y * 0.125) + 0.5/512.0 + ((color.g) * 0.125);
+
+      vec2 texPos2;
+      texPos2.x = (quad2.x * 0.125) + 0.5/512.0 + ((color.r) * 0.125);
+      texPos2.y = (quad2.y * 0.125) + 0.5/512.0 + ((color.g) * 0.125);
+
+      vec4 newColor1 = texture2D(u_lut, texPos1);
+      vec4 newColor2 = texture2D(u_lut, texPos2);
+
+      float mixBlue = fract(blueColor);
+      gl_FragColor = mix(newColor1, newColor2, mixBlue);
+      gl_FragColor.a = 1.0;
+    }
+  `;
+
+  function setupGL() {
+    programInfo = twgl.createProgramInfo(gl, [vertexShaderSrc, fragmentShaderSrc]);
+    bufferInfo = twgl.createBufferInfoFromArrays(gl, {
+      position: [-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1],
+      texcoord: [0,0, 1,0, 0,1, 0,1, 1,0, 1,1]
+    });
+
+    textureVideo = twgl.createTexture(gl, { width: 1, height:1, min: gl.LINEAR });
+    textureLUT = twgl.createTexture(gl, { src: 'lut.png', min: gl.LINEAR });
+  }
+
+  function drawLoop() {
+    twgl.resizeCanvasToDisplaySize(gl.canvas);
+    gl.viewport(0,0,gl.canvas.width, gl.canvas.height);
+
+    // atualizar vídeo
+    gl.bindTexture(gl.TEXTURE_2D, textureVideo);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,video);
+
+    gl.useProgram(programInfo.program);
+    twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+    twgl.setUniforms(programInfo, { u_video: textureVideo, u_lut: textureLUT });
+    twgl.drawBufferInfo(gl, bufferInfo);
+
+    // desenhar moldura no topo
+    ctx2d.clearRect(0,0,canvas.width,canvas.height);
+    ctx2d.drawImage(canvas,0,0);
+    ctx2d.drawImage(frame,0,0,canvas.width,canvas.height);
+
+    requestAnimationFrame(drawLoop);
+  }
+
+  snapBtn.addEventListener('click', () => {
+    const img = canvas.toDataURL('image/png');
+    download.href = img;
+    download.click();
+  });
+
+  setupGL();
+  startCamera();
+</script>
 
 </body>
 </html>
