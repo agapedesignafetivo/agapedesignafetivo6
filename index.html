@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>BOTÕES COM LUT</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+      height: 100%;
+      width: 100%;
+    }
+
+    #camera-wrap {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: black;
+    }
+
+    video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: black;
+      display: none; /* escondemos o vídeo, vamos desenhar direto no canvas */
+    }
+
+    #frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    #buttons {
+      position: fixed;
+      bottom: 25px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      z-index: 20;
+    }
+
+    .icon-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      cursor: pointer;
+      object-fit: cover;
+      border: none;
+      background: none;
+      padding: 0;
+      transition: transform 0.2s;
+    }
+
+    .icon-btn:hover { transform: scale(1.1); }
+
+    #download { display: none; }
+  </style>
+</head>
+<body>
+
+  <div id="camera-wrap">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+    <img id="frame" src="moldura.png">
+  </div>
+
+  <div id="buttons">
+    <img id="switchBtn" class="icon-btn" src="trocarcamera.png" title="Trocar câmera">
+    <img id="snapBtn" class="icon-btn" src="tirarfoto.png" title="Tirar Foto">
+  </div>
+
+  <a id="download" download="fotomoldurapersonalizada.png"></a>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const frame = document.getElementById("frame");
+    const snapBtn = document.getElementById("snapBtn");
+    const switchBtn = document.getElementById("switchBtn");
+    const download = document.getElementById("download");
+
+    let stream = null;
+    let usingFront = true;
+
+    // Carregar LUT
+    const lutImg = new Image();
+    lutImg.src = "lut.png";
+    let lutCanvas = document.createElement("canvas");
+    let lutCtx = lutCanvas.getContext("2d");
+    let lutLoaded = false;
+
+    lutImg.onload = () => {
+      lutCanvas.width = lutImg.width;
+      lutCanvas.height = lutImg.height;
+      lutCtx.drawImage(lutImg, 0, 0);
+      lutLoaded = true;
+      console.log("LUT carregado!");
+    }
+
+    async function startCamera() {
+      if (stream) stream.getTracks().forEach(t => t.stop());
+
+      const constraints = { video: { facingMode: usingFront ? "user" : "environment" } };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+
+      // Espelhamento apenas no preview
+      video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
+      await waitForVideoReady();
+
+      // Ajustar canvas
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      requestAnimationFrame(drawFrame);
+    }
+
+    function waitForVideoReady(){
+      return new Promise(resolve => {
+        if(video.readyState >= 2 && video.videoWidth > 0){
+          resolve();
+          return;
+        }
+        video.onloadedmetadata = () => resolve();
+      });
+    }
+
+    // Trocar câmera
+    switchBtn.addEventListener("click", () => {
+      usingFront = !usingFront;
+      startCamera();
+    });
+
+    // Função para aplicar LUT simples
+    function applyLUT(imageData){
+      if(!lutLoaded) return imageData;
+      const data = imageData.data;
+      const lutData = lutCtx.getImageData(0,0,lutCanvas.width,lutCanvas.height).data;
+
+      for(let i=0; i<data.length; i+=4){
+        const r = data[i];
+        const g = data[i+1];
+        const b = data[i+2];
+
+        // Mapear r,g,b de 0-255 para coordenadas do LUT
+        const x = Math.floor(r / 255 * (lutCanvas.width - 1));
+        const y = Math.floor(g / 255 * (lutCanvas.height - 1));
+        const index = (y * lutCanvas.width + x) * 4;
+
+        data[i] = lutData[index];       // R
+        data[i+1] = lutData[index+1];   // G
+        data[i+2] = lutData[index+2];   // B
+        // alpha permanece
+      }
+      return imageData;
+    }
+
+    // Desenhar vídeo + LUT + frame
+    function drawFrame(){
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Aplicar LUT
+      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+      ctx.putImageData(applyLUT(imgData), 0, 0);
+
+      // Desenhar moldura
+      ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+
+      requestAnimationFrame(drawFrame);
+    }
+
+    // Tirar foto com LUT + moldura
+    snapBtn.addEventListener("click", () => {
+      const img = canvas.toDataURL("image/png");
+      download.href = img;
+      download.click();
+    });
+
+    startCamera();
+  </script>
+
+</body>
+</html>
