@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Feito BRILHOS</title>
+  <title>Feito 1994</title>
 
   <style>
     html, body {
@@ -31,6 +31,14 @@
       height: 100%;
       object-fit: cover;
       background: black;
+    }
+
+    #brilhosCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
     }
 
     #frame, #frame2 {
@@ -74,6 +82,7 @@
 
   <div id="camera-wrap">
     <video id="video" autoplay playsinline muted></video>
+    <canvas id="brilhosCanvas"></canvas>
     <img id="frame" src="moldura.png">
     <img id="frame2" src="moldura2.png" style="display:none;">
   </div>
@@ -94,79 +103,75 @@
     const switchBtn = document.getElementById("switchBtn");
     const switchFrameBtn = document.getElementById("switchFrameBtn");
     const download = document.getElementById("download");
-    const brilhoContainer = document.getElementById("camera-wrap");
+
+    const brilhosCanvas = document.getElementById("brilhosCanvas");
+    const bCtx = brilhosCanvas.getContext("2d");
 
     let stream = null;
     let usingFront = true;
     let usingFrame2 = false;
     let brilhos = [];
-    let brilhosAtivos = true; // Brilhos começam ativos
+    let brilhosAtivos = true;
 
-    // Função para criar a partícula de brilho com a imagem
+    // Cria partículas de brilho
     function criarBrilho() {
       if (brilhos.length < 10 && brilhosAtivos) {
-        // Adiciona a partícula de brilho (como círculo no canvas)
-        const brilho = {
-          size: Math.random() * 20 + 10, // Tamanho aleatório entre 10 e 30px
-          x: Math.random() * 100, // Posição aleatória
-          y: Math.random() * 100, // Posição aleatória
-          opacity: Math.random() * 0.5 + 0.5 // Opacidade aleatória
-        };
-        brilhos.push(brilho);
+        brilhos.push({
+          size: Math.random() * 20 + 10,
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+          opacity: Math.random() * 0.5 + 0.5
+        });
       } else if (brilhos.length >= 10 && brilhosAtivos) {
-        // Remove o brilho mais antigo para manter o número fixo de 10
         brilhos.shift();
-        // Criar o novo brilho após remover o mais antigo
         criarBrilho();
       }
     }
 
-    // Função para animar as partículas de brilho
-    function animarBrilhos(ctx) {
-      brilhos.forEach((brilho) => {
-        ctx.beginPath();
-        ctx.arc(brilho.x * (ctx.canvas.width / 100), brilho.y * (ctx.canvas.height / 100), brilho.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${brilho.opacity})`; // Cor branca com opacidade
-        ctx.fill();
+    // Desenha os brilhos em tempo real no canvas sobreposto
+    function animarBrilhosRealtime() {
+      bCtx.clearRect(0, 0, brilhosCanvas.width, brilhosCanvas.height);
+      brilhos.forEach(brilho => {
+        bCtx.beginPath();
+        bCtx.arc(brilho.x * (brilhosCanvas.width / 100), brilho.y * (brilhosCanvas.height / 100), brilho.size, 0, Math.PI * 2);
+        bCtx.fillStyle = `rgba(255,255,255,${brilho.opacity})`;
+        bCtx.fill();
       });
-    }
-
-    // Função para começar a câmera
-    async function startCamera() {
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-      }
-
-      const constraints = {
-        video: { facingMode: usingFront ? "user" : "environment" }
-      };
-
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      video.srcObject = stream;
-
-      // Espelhamento apenas NO PREVIEW
-      video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
-
-      await waitForVideoReady();
-
-      // Cria brilhos logo que a câmera for iniciada
-      for (let i = 0; i < 10; i++) {
-        criarBrilho();
-      }
-
-      // Desenha os brilhos animados
-      const ctx = document.createElement('canvas').getContext('2d');
-      animarBrilhos(ctx);
+      requestAnimationFrame(animarBrilhosRealtime);
     }
 
     function waitForVideoReady() {
       return new Promise(resolve => {
-        if (video.readyState >= 2 && video.videoWidth > 0) {
+        if(video.readyState >= 2 && video.videoWidth > 0){
           resolve();
           return;
         }
         video.onloadedmetadata = () => resolve();
       });
+    }
+
+    async function startCamera() {
+      if(stream){
+        stream.getTracks().forEach(t => t.stop());
+      }
+
+      const constraints = { video: { facingMode: usingFront ? "user" : "environment" } };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+
+      video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
+
+      await waitForVideoReady();
+
+      // Ajusta o canvas de brilhos ao tamanho do vídeo
+      brilhosCanvas.width = video.videoWidth;
+      brilhosCanvas.height = video.videoHeight;
+
+      // Cria brilhos iniciais
+      for(let i=0;i<10;i++) criarBrilho();
+
+      // Inicia animação em tempo real
+      animarBrilhosRealtime();
     }
 
     // Trocar câmera
@@ -175,82 +180,73 @@
       startCamera();
     });
 
-    // Alternar entre as molduras
+    // Trocar moldura
     switchFrameBtn.addEventListener("click", () => {
       usingFrame2 = !usingFrame2;
-      if (usingFrame2) {
-        frame.style.display = "none";
-        frame2.style.display = "block";
-      } else {
-        frame.style.display = "block";
-        frame2.style.display = "none";
-      }
+      frame.style.display = usingFrame2 ? "none" : "block";
+      frame2.style.display = usingFrame2 ? "block" : "none";
     });
 
+    // Captura a foto com moldura e brilhos
     snapBtn.addEventListener("click", async () => {
       await waitForVideoReady();
 
-      // Cria brilhos ao capturar a foto
+      // Cria brilhos extras para captura
       brilhosAtivos = true;
-      for (let i = 0; i < 10; i++) {
-        criarBrilho();
-      }
+      for(let i=0;i<10;i++) criarBrilho();
 
       const vw = video.videoWidth;
       const vh = video.videoHeight;
-
       const targetW = 720;
       const targetH = 1280;
 
-      // Canvas para salvar a imagem final
       const canvas = document.createElement("canvas");
       canvas.width = targetW;
       canvas.height = targetH;
       const ctx = canvas.getContext("2d");
 
-      // Desenha o vídeo no canvas final
+      // Desenha vídeo
       ctx.save();
-      if (usingFront) {
-        ctx.translate(targetW, 0);
-        ctx.scale(-1, 1);
+      if(usingFront){
+        ctx.translate(targetW,0);
+        ctx.scale(-1,1);
       }
 
       const videoRatio = vw / vh;
       const targetRatio = targetW / targetH;
-
       let sx, sy, sw, sh;
 
-      if (videoRatio > targetRatio) {
+      if(videoRatio > targetRatio){
         sh = vh;
         sw = sh * targetRatio;
-        sx = (vw - sw) / 2;
+        sx = (vw - sw)/2;
         sy = 0;
       } else {
         sw = vw;
         sh = sw / targetRatio;
         sx = 0;
-        sy = (vh - sh) / 2;
+        sy = (vh - sh)/2;
       }
 
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
       ctx.restore();
 
-      // Desenha a moldura
-      if (usingFrame2) {
-        ctx.drawImage(frame2, 0, 0, targetW, targetH);
-      } else {
-        ctx.drawImage(frame, 0, 0, targetW, targetH);
-      }
+      // Desenha moldura
+      ctx.drawImage(usingFrame2 ? frame2 : frame, 0, 0, targetW, targetH);
 
-      // Desenha os brilhos no canvas final
-      animarBrilhos(ctx);
+      // Desenha brilhos
+      brilhos.forEach(brilho => {
+        ctx.beginPath();
+        ctx.arc(brilho.x * (targetW/100), brilho.y * (targetH/100), brilho.size, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${brilho.opacity})`;
+        ctx.fill();
+      });
 
-      // Salvar a imagem
+      // Salvar imagem
       const img = canvas.toDataURL("image/png");
       download.href = img;
       download.click();
 
-      // Desativa a criação de brilhos após capturar a foto
       brilhosAtivos = false;
     });
 
