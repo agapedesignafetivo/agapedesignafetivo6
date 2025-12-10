@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>BRILHOS</title>
+  <title>10 BRILHOS</title>
 
   <style>
     html, body {
@@ -140,14 +140,13 @@
           dy: (Math.random() - 0.5) * 0.05, // Velocidade vertical muito lenta
           size: size
         });
-      }
-    }
-
-    // Função para remover brilhos antigos (quando atingem o limite)
-    function removerBrilhos() {
-      if (brilhos.length > 10) { // Garantir que o número de brilhos não ultrapasse 10
+      } else {
+        // Remove o brilho mais antigo para manter o número fixo de 10
         const brilhoRemovido = brilhos.shift();
         brilhoRemovido.element.remove();
+
+        // Criar o novo brilho após remover o mais antigo
+        criarBrilho();
       }
     }
 
@@ -171,10 +170,7 @@
     }
 
     // Inicializa a animação das partículas
-    setInterval(() => {
-      criarBrilho(); // Cria um novo brilho a cada 1.5 segundos
-      removerBrilhos(); // Remover brilhos antigos se o número ultrapassar 10
-    }, 1500);  // Intervalo de 1.5 segundos para criar brilhos (ajuste para menos ou mais)
+    setInterval(criarBrilho, 1500); // Cria um novo brilho a cada 1.5 segundos
 
     animarBrilhos(); // Começa a animação das partículas
 
