@@ -41,45 +41,6 @@
       pointer-events: none;
     }
 
-    /* Aqui estamos configurando a camada de brilho */
-    .brilho {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      background-image: url('brilho.png'); /* Coloque o caminho da sua imagem de brilho */
-      pointer-events: none;
-      opacity: 0; /* Começa invisível */
-      animation: brilhar 4s infinite alternate; /* Diminuímos o tempo para 4 segundos */
-    }
-
-    @keyframes brilhar {
-      0% {
-        top: 20%;
-        left: 30%;
-        opacity: 0.2;
-      }
-      25% {
-        top: 40%;
-        left: 60%;
-        opacity: 0.6;
-      }
-      50% {
-        top: 70%;
-        left: 40%;
-        opacity: 1;
-      }
-      75% {
-        top: 80%;
-        left: 10%;
-        opacity: 0.4;
-      }
-      100% {
-        top: 50%;
-        left: 80%;
-        opacity: 0.8;
-      }
-    }
-
     #buttons {
       position: fixed;
       bottom: 25px;
@@ -91,19 +52,19 @@
     }
 
     button {
-      padding: 8px 16px; /* Botões menores */
-      border: 2px solid red; /* Borda vermelha */
+      padding: 8px 16px;
+      border: 2px solid red;
       border-radius: 12px;
-      font-size: 16px; /* Tamanho de fonte menor */
+      font-size: 16px;
       font-weight: bold;
-      background: white; /* Fundo branco */
-      color: black; /* Texto preto */
+      background: white;
+      color: black;
       cursor: pointer;
       text-align: center;
     }
 
     button:hover {
-      opacity: 0.9; /* Efeito de hover */
+      opacity: 0.9;
     }
 
     #download { display: none; }
@@ -114,13 +75,13 @@
   <div id="camera-wrap">
     <video id="video" autoplay playsinline muted></video>
     <img id="frame" src="moldura.png">
-    <img id="frame2" src="moldura2.png" style="display:none;"> <!-- Segunda moldura -->
+    <img id="frame2" src="moldura2.png" style="display:none;">
   </div>
 
   <div id="buttons">
     <button id="switchBtn">Trocar câmera 🔄</button>
     <button id="snapBtn">Tirar Foto 📸</button>
-    <button id="switchFrameBtn">Trocar Moldura 🖼️</button> <!-- Botão para trocar moldura -->
+    <button id="switchFrameBtn">Trocar Moldura 🖼️</button>
   </div>
 
   <a id="download" download="fotomoldurapersonalizada.png"></a>
@@ -137,8 +98,69 @@
 
     let stream = null;
     let usingFront = true;
-    let usingFrame2 = false; // Variável para controlar qual moldura usar
+    let usingFrame2 = false;
 
+    let brilhos = [];
+
+    // Função para criar partículas de brilho
+    function criarBrilho() {
+      const brilho = document.createElement("div");
+      brilho.classList.add("brilho");
+
+      // Atributos de cada partícula de brilho
+      const size = Math.random() * 20 + 10;  // Tamanho aleatório entre 10 e 30px
+      brilho.style.width = `${size}px`;
+      brilho.style.height = `${size}px`;
+      brilho.style.left = `${Math.random() * 100}%`;
+      brilho.style.top = `${Math.random() * 100}%`;
+      brilho.style.opacity = Math.random() * 0.5 + 0.5; // Opacidade aleatória
+      brilho.style.background = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.4})`;
+      brilho.style.transition = "all 0.3s ease-out";
+
+      brilhoContainer.appendChild(brilho);
+
+      // Adiciona a partícula ao array para controle
+      brilhos.push({
+        element: brilho,
+        top: parseFloat(brilho.style.top),
+        left: parseFloat(brilho.style.left),
+        dx: (Math.random() - 0.5) * 2, // Velocidade horizontal
+        dy: (Math.random() - 0.5) * 2, // Velocidade vertical
+        size: size
+      });
+    }
+
+    // Função para remover brilhos antigos
+    function removerBrilhos() {
+      if (brilhos.length > 100) { // Se o número de brilhos for maior que 100, remove os antigos
+        const brilhoRemovido = brilhos.shift();
+        brilhoRemovido.element.remove();
+      }
+    }
+
+    // Função para animar as partículas
+    function animarBrilhos() {
+      brilhos.forEach((brilho, index) => {
+        brilho.top += brilho.dy;
+        brilho.left += brilho.dx;
+
+        // Coloca a partícula de volta na tela se ela sair dos limites
+        if (brilho.top > 100) brilho.top = 0;
+        if (brilho.left > 100) brilho.left = 0;
+        if (brilho.top < 0) brilho.top = 100;
+        if (brilho.left < 0) brilho.left = 100;
+
+        brilho.element.style.top = `${brilho.top}%`;
+        brilho.element.style.left = `${brilho.left}%`;
+
+        // Cria partículas novas a cada intervalo
+        if (Math.random() < 0.03) criarBrilho();
+      });
+
+      requestAnimationFrame(animarBrilhos);
+    }
+
+    // Função para começar a câmera
     async function startCamera(){
       if(stream){
         stream.getTracks().forEach(t => t.stop());
@@ -185,31 +207,13 @@
       }
     });
 
-    // Função para criar múltiplos brilhos
-    function criarBrilhos(qtd) {
-      for (let i = 0; i < qtd; i++) {
-        const brilho = document.createElement("div");
-        brilho.classList.add("brilho");
-        brilho.style.position = 'absolute';
-        brilho.style.width = '50px';
-        brilho.style.height = '50px';
-        brilho.style.backgroundImage = "url('brilho.png')";
-        brilho.style.pointerEvents = 'none';
-        brilho.style.opacity = 0; // Começa invisível
+    // Inicializa a animação dos brilhos
+    setInterval(() => {
+      criarBrilho();
+      removerBrilhos();
+    }, 200);  // Adiciona uma partícula a cada 200ms
 
-        brilhoContainer.appendChild(brilho);
-
-        // Definir posições aleatórias para cada brilho
-        const top = Math.random() * 100;
-        const left = Math.random() * 100;
-
-        brilho.style.top = `${top}%`;
-        brilho.style.left = `${left}%`;
-      }
-    }
-
-    // Cria 10 brilhos (você pode ajustar o número)
-    criarBrilhos(10);
+    animarBrilhos(); // Começa a animação das partículas
 
     snapBtn.addEventListener("click", async () => {
       await waitForVideoReady();
@@ -220,19 +224,16 @@
       const targetW = 720;
       const targetH = 1280;
 
-      // Canvas final
       const canvas = document.createElement("canvas");
       canvas.width = targetW;
       canvas.height = targetH;
       const ctx = canvas.getContext("2d");
 
-      // Canvas temporário para a câmera
       const buffer = document.createElement("canvas");
       buffer.width = targetW;
       buffer.height = targetH;
       const btx = buffer.getContext("2d");
 
-      // --- DESENHAR A CÂMERA NO BUFFER ---
       btx.save();
       if (usingFront) {
         btx.translate(targetW, 0);
@@ -259,17 +260,14 @@
       btx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
       btx.restore();
 
-      // --- DESENHA O BUFFER NO CANVAS FINAL (NÃO É ESPELHADO) ---
       ctx.drawImage(buffer, 0, 0);
 
-      // --- DESENHA A MOLDURA 100% NORMAL (NUNCA INVERTE) ---
       if (usingFrame2) {
         ctx.drawImage(frame2, 0, 0, targetW, targetH);
       } else {
         ctx.drawImage(frame, 0, 0, targetW, targetH);
       }
 
-      // Salvar
       const img = canvas.toDataURL("image/png");
       download.href = img;
       download.click();
