@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>briiiilhinhos</title>
+  <title>Feito</title>
 
   <style>
     html, body {
@@ -68,15 +68,6 @@
     }
 
     #download { display: none; }
-
-    /* Estilo das partículas de brilho */
-    .brilho {
-      position: absolute;
-      pointer-events: none;
-      background-size: contain;
-      background-repeat: no-repeat;
-      transition: all 0.3s ease-out;
-    }
   </style>
 </head>
 <body>
@@ -114,60 +105,30 @@
     // Função para criar a partícula de brilho com a imagem
     function criarBrilho() {
       if (brilhos.length < 10 && brilhosAtivos) {
-        const brilho = document.createElement("div");
-        brilho.classList.add("brilho");
-
-        // Adiciona a imagem de brilho
-        brilho.style.backgroundImage = "url('brilho.png')"; // Coloque o caminho da sua imagem de brilho
-
-        // Definir o tamanho da partícula
-        const size = Math.random() * 20 + 10;  // Tamanho aleatório entre 10 e 30px
-        brilho.style.width = `${size}px`;
-        brilho.style.height = `${size}px`;
-
-        // Inicializar a posição da partícula
-        brilho.style.left = `${Math.random() * 100}%`;
-        brilho.style.top = `${Math.random() * 100}%`;
-        brilho.style.opacity = Math.random() * 0.5 + 0.5; // Opacidade aleatória
-
-        brilhoContainer.appendChild(brilho);
-
-        // Adiciona a partícula ao array para controle
-        brilhos.push({
-          element: brilho,
-          top: parseFloat(brilho.style.top),
-          left: parseFloat(brilho.style.left),
-          dx: (Math.random() - 0.5) * 0.05, // Velocidade horizontal muito lenta
-          dy: (Math.random() - 0.5) * 0.05, // Velocidade vertical muito lenta
-          size: size
-        });
+        // Adiciona a partícula de brilho (como círculo no canvas)
+        const brilho = {
+          size: Math.random() * 20 + 10, // Tamanho aleatório entre 10 e 30px
+          x: Math.random() * 100, // Posição aleatória
+          y: Math.random() * 100, // Posição aleatória
+          opacity: Math.random() * 0.5 + 0.5 // Opacidade aleatória
+        };
+        brilhos.push(brilho);
       } else if (brilhos.length >= 10 && brilhosAtivos) {
         // Remove o brilho mais antigo para manter o número fixo de 10
-        const brilhoRemovido = brilhos.shift();
-        brilhoRemovido.element.remove();
-
+        brilhos.shift();
         // Criar o novo brilho após remover o mais antigo
         criarBrilho();
       }
     }
 
     // Função para animar as partículas de brilho
-    function animarBrilhos() {
+    function animarBrilhos(ctx) {
       brilhos.forEach((brilho) => {
-        brilho.top += brilho.dy;
-        brilho.left += brilho.dx;
-
-        // Coloca a partícula de volta na tela se ela sair dos limites
-        if (brilho.top > 100) brilho.top = 0;
-        if (brilho.left > 100) brilho.left = 0;
-        if (brilho.top < 0) brilho.top = 100;
-        if (brilho.left < 0) brilho.left = 100;
-
-        brilho.element.style.top = `${brilho.top}%`;
-        brilho.element.style.left = `${brilho.left}%`;
+        ctx.beginPath();
+        ctx.arc(brilho.x * (canvas.width / 100), brilho.y * (canvas.height / 100), brilho.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${brilho.opacity})`; // Cor branca com opacidade
+        ctx.fill();
       });
-
-      requestAnimationFrame(animarBrilhos); // Anima as partículas em loop
     }
 
     // Função para começar a câmera
@@ -193,7 +154,9 @@
         criarBrilho();
       }
 
-      animarBrilhos(); // Inicia a animação dos brilhos
+      // Desenha os brilhos animados
+      const ctx = document.createElement('canvas').getContext('2d');
+      animarBrilhos(ctx);
     }
 
     function waitForVideoReady(){
@@ -286,9 +249,7 @@
       }
 
       // Desenha os brilhos no canvas final
-      brilhos.forEach((brilho) => {
-        ctx.drawImage(brilho.element, brilho.left, brilho.top, brilho.size, brilho.size);
-      });
+      animarBrilhos(ctx);
 
       // Salvar a imagem
       const img = canvas.toDataURL("image/png");
