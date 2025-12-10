@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>10 BRILHOS</title>
+  <title>BRIIIIIIIILHOS</title>
 
   <style>
     html, body {
@@ -109,10 +109,11 @@
     let usingFront = true;
     let usingFrame2 = false;
     let brilhos = [];
+    let brilhosAtivos = true; // A variável brilhosAtivos é definida como true para iniciar a animação de brilhos
 
     // Função para criar a partícula de brilho com a imagem
     function criarBrilho() {
-      if (brilhos.length < 10) { // Limita a quantidade de brilhos na tela para no máximo 10
+      if (brilhos.length < 10 && brilhosAtivos) { // Limita a quantidade de brilhos na tela para no máximo 10
         const brilho = document.createElement("div");
         brilho.classList.add("brilho");
 
@@ -140,7 +141,7 @@
           dy: (Math.random() - 0.5) * 0.05, // Velocidade vertical muito lenta
           size: size
         });
-      } else {
+      } else if (brilhos.length >= 10 && brilhosAtivos) {
         // Remove o brilho mais antigo para manter o número fixo de 10
         const brilhoRemovido = brilhos.shift();
         brilhoRemovido.element.remove();
@@ -152,7 +153,7 @@
 
     // Função para animar as partículas de brilho
     function animarBrilhos() {
-      brilhos.forEach((brilho, index) => {
+      brilhos.forEach((brilho) => {
         brilho.top += brilho.dy;
         brilho.left += brilho.dx;
 
@@ -168,11 +169,6 @@
 
       requestAnimationFrame(animarBrilhos); // Anima as partículas em loop
     }
-
-    // Inicializa a animação das partículas
-    setInterval(criarBrilho, 1500); // Cria um novo brilho a cada 1.5 segundos
-
-    animarBrilhos(); // Começa a animação das partículas
 
     // Função para começar a câmera
     async function startCamera(){
@@ -191,6 +187,13 @@
       video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
 
       await waitForVideoReady();
+
+      // Cria brilhos logo que a câmera for iniciada
+      for (let i = 0; i < 10; i++) {
+        criarBrilho();
+      }
+
+      animarBrilhos(); // Inicia a animação dos brilhos
     }
 
     function waitForVideoReady(){
@@ -223,6 +226,12 @@
 
     snapBtn.addEventListener("click", async () => {
       await waitForVideoReady();
+
+      // Cria brilhos ao capturar a foto
+      brilhosAtivos = true;
+      for (let i = 0; i < 10; i++) {
+        criarBrilho();
+      }
 
       const vw = video.videoWidth;
       const vh = video.videoHeight;
@@ -273,10 +282,13 @@
         ctx.drawImage(frame, 0, 0, targetW, targetH);
       }
 
-      // Salvar
+      // Salvar a imagem
       const img = canvas.toDataURL("image/png");
       download.href = img;
       download.click();
+
+      // Desativa a criação de brilhos após capturar a foto
+      brilhosAtivos = false;
     });
 
     startCamera();
