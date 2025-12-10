@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>BRILHOOOOOS</title>
+  <title>Feito 12222</title>
 
   <style>
     html, body {
@@ -114,54 +114,66 @@
     let usingFront = true;
     let usingFrame2 = false;
     let brilhos = [];
-    const MAX_BRILHOS = 15;
+    const MAX_BRILHOS = 15; // Limite de brilhos visíveis no canvas
 
     // Função para criar brilhos
     function criarBrilho() {
       brilhos.push({
         x: Math.random() * 100,
         y: Math.random() * 100,
-        size: Math.random() * 20 + 10,  // tamanho do brilho
-        opacity: Math.random() * 0.5 + 0.5, // opacidade do brilho
-        dx: (Math.random() - 0.5) * 0.3, // movimento no eixo X
-        dy: (Math.random() - 0.5) * 0.3, // movimento no eixo Y
-        dOpacity: (Math.random() - 0.5) * 0.02 // variação de opacidade
+        size: Math.random() * 20 + 10,  // Tamanho do brilho
+        opacity: Math.random() * 0.5 + 0.5, // Opacidade
+        dx: (Math.random() - 0.5) * 0.5, // Movimento no eixo X
+        dy: (Math.random() - 0.5) * 0.5, // Movimento no eixo Y
+        dOpacity: (Math.random() - 0.5) * 0.02 // Variação de opacidade
       });
-      if (brilhos.length > MAX_BRILHOS) brilhos.shift();
     }
 
-    // Função para desenhar a imagem do brilho
+    // Função para desenhar os brilhos com a imagem
     function desenharBrilho(ctx, brilho, canvasWidth, canvasHeight) {
       const x = brilho.x * (canvasWidth / 100);
       const y = brilho.y * (canvasHeight / 100);
       const r = brilho.size;
 
-      // Desenha a imagem de brilho
+      // Desenha a imagem do brilho
       ctx.save();
-      ctx.globalAlpha = brilho.opacity;
-      ctx.drawImage(brilhoImg, x - r / 2, y - r / 2, r, r); // Usando a imagem como brilho
+      ctx.globalAlpha = brilho.opacity; // Controla a opacidade
+      ctx.drawImage(brilhoImg, x - r / 2, y - r / 2, r, r); // Desenha a imagem no canvas
       ctx.restore();
     }
 
-    // Atualiza a posição e a opacidade dos brilhos para animação
+    // Função que atualiza os brilhos e os reposiciona continuamente
     function atualizarBrilhos() {
       brilhos.forEach(b => {
         b.x += b.dx;
         b.y += b.dy;
         b.opacity += b.dOpacity;
 
-        if (b.x < 0) b.x = 0; if (b.x > 100) b.x = 100;
-        if (b.y < 0) b.y = 0; if (b.y > 100) b.y = 100;
-        if (b.opacity < 0) b.opacity = 0; if (b.opacity > 1) b.opacity = 1;
+        // Mantém os brilhos dentro dos limites do canvas
+        if (b.x < 0) b.x = 0;
+        if (b.x > 100) b.x = 100;
+        if (b.y < 0) b.y = 0;
+        if (b.y > 100) b.y = 100;
+        
+        // Reposiciona os brilhos quando saem do canvas
+        if (b.x < 0 || b.x > 100 || b.y < 0 || b.y > 100) {
+          b.x = Math.random() * 100;
+          b.y = Math.random() * 100;
+          b.opacity = Math.random() * 0.5 + 0.5; // Nova opacidade ao reposicionar
+        }
+
+        // Evita que os brilhos desapareçam
+        if (b.opacity < 0) b.opacity = 0;
+        if (b.opacity > 1) b.opacity = 1;
       });
     }
 
-    // Desenha os brilhos no canvas em tempo real
+    // Função para desenhar e animar os brilhos continuamente
     function animarBrilhosRealtime() {
       bCtx.clearRect(0, 0, brilhosCanvas.width, brilhosCanvas.height);
-      atualizarBrilhos();
+      atualizarBrilhos(); // Atualiza posição e opacidade
       brilhos.forEach(brilho => desenharBrilho(bCtx, brilho, brilhosCanvas.width, brilhosCanvas.height));
-      requestAnimationFrame(animarBrilhosRealtime);
+      requestAnimationFrame(animarBrilhosRealtime); // Continuar a animação
     }
 
     function waitForVideoReady() {
@@ -172,7 +184,7 @@
     }
 
     async function startCamera() {
-      if(stream) stream.getTracks().forEach(t => t.stop());
+      if (stream) stream.getTracks().forEach(t => t.stop());
 
       const constraints = { video: { facingMode: usingFront ? "user" : "environment" } };
       stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -185,9 +197,12 @@
       brilhosCanvas.width = video.videoWidth;
       brilhosCanvas.height = video.videoHeight;
 
-      for(let i = 0; i < MAX_BRILHOS; i++) criarBrilho();
+      // Inicializa os brilhos
+      for (let i = 0; i < MAX_BRILHOS; i++) {
+        criarBrilho();
+      }
 
-      animarBrilhosRealtime();
+      animarBrilhosRealtime(); // Inicia a animação dos brilhos
     }
 
     switchBtn.addEventListener("click", () => {
@@ -216,7 +231,10 @@
 
       // Desenhar vídeo
       ctx.save();
-      if(usingFront){ ctx.translate(targetW, 0); ctx.scale(-1, 1); }
+      if (usingFront) {
+        ctx.translate(targetW, 0);
+        ctx.scale(-1, 1);
+      }
 
       const videoRatio = vw / vh;
       const targetRatio = targetW / targetH;
