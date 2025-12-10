@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Feito</title>
+  <title>BRILHOOOOOS</title>
 
   <style>
     html, body {
@@ -85,6 +85,7 @@
     <canvas id="brilhosCanvas"></canvas>
     <img id="frame" src="moldura.png">
     <img id="frame2" src="moldura2.png" style="display:none;">
+    <img id="brilhoImg" src="brilho.png" style="display:none;"> <!-- Imagem de brilho -->
   </div>
 
   <div id="buttons">
@@ -107,44 +108,42 @@
     const brilhosCanvas = document.getElementById("brilhosCanvas");
     const bCtx = brilhosCanvas.getContext("2d");
 
+    const brilhoImg = document.getElementById("brilhoImg");
+
     let stream = null;
     let usingFront = true;
     let usingFrame2 = false;
     let brilhos = [];
     const MAX_BRILHOS = 15;
 
-    // Função para criar brilhos iniciais
+    // Função para criar brilhos
     function criarBrilho() {
       brilhos.push({
         x: Math.random() * 100,
         y: Math.random() * 100,
-        size: Math.random() * 20 + 10,
-        opacity: Math.random() * 0.5 + 0.5,
-        dx: (Math.random() - 0.5) * 0.3,
-        dy: (Math.random() - 0.5) * 0.3,
-        dOpacity: (Math.random() - 0.5) * 0.02
+        size: Math.random() * 20 + 10,  // tamanho do brilho
+        opacity: Math.random() * 0.5 + 0.5, // opacidade do brilho
+        dx: (Math.random() - 0.5) * 0.3, // movimento no eixo X
+        dy: (Math.random() - 0.5) * 0.3, // movimento no eixo Y
+        dOpacity: (Math.random() - 0.5) * 0.02 // variação de opacidade
       });
       if (brilhos.length > MAX_BRILHOS) brilhos.shift();
     }
 
-    // Função que desenha cada brilho com gradiente radial
+    // Função para desenhar a imagem do brilho
     function desenharBrilho(ctx, brilho, canvasWidth, canvasHeight) {
       const x = brilho.x * (canvasWidth / 100);
       const y = brilho.y * (canvasHeight / 100);
       const r = brilho.size;
 
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, `rgba(255,255,255,${brilho.opacity})`);
-      grad.addColorStop(0.5, `rgba(255,255,255,${brilho.opacity * 0.3})`);
-      grad.addColorStop(1, 'rgba(255,255,255,0)');
-
-      ctx.beginPath();
-      ctx.fillStyle = grad;
-      ctx.arc(x, y, r, 0, Math.PI*2);
-      ctx.fill();
+      // Desenha a imagem de brilho
+      ctx.save();
+      ctx.globalAlpha = brilho.opacity;
+      ctx.drawImage(brilhoImg, x - r / 2, y - r / 2, r, r); // Usando a imagem como brilho
+      ctx.restore();
     }
 
-    // Atualiza posição e opacidade dos brilhos para animar
+    // Atualiza a posição e a opacidade dos brilhos para animação
     function atualizarBrilhos() {
       brilhos.forEach(b => {
         b.x += b.dx;
@@ -157,9 +156,9 @@
       });
     }
 
-    // Desenha brilhos no canvas em tempo real
+    // Desenha os brilhos no canvas em tempo real
     function animarBrilhosRealtime() {
-      bCtx.clearRect(0,0,brilhosCanvas.width, brilhosCanvas.height);
+      bCtx.clearRect(0, 0, brilhosCanvas.width, brilhosCanvas.height);
       atualizarBrilhos();
       brilhos.forEach(brilho => desenharBrilho(bCtx, brilho, brilhosCanvas.width, brilhosCanvas.height));
       requestAnimationFrame(animarBrilhosRealtime);
@@ -186,7 +185,7 @@
       brilhosCanvas.width = video.videoWidth;
       brilhosCanvas.height = video.videoHeight;
 
-      for(let i=0;i<MAX_BRILHOS;i++) criarBrilho();
+      for(let i = 0; i < MAX_BRILHOS; i++) criarBrilho();
 
       animarBrilhosRealtime();
     }
@@ -217,16 +216,22 @@
 
       // Desenhar vídeo
       ctx.save();
-      if(usingFront){ ctx.translate(targetW,0); ctx.scale(-1,1); }
+      if(usingFront){ ctx.translate(targetW, 0); ctx.scale(-1, 1); }
 
-      const videoRatio = vw/vh;
-      const targetRatio = targetW/targetH;
+      const videoRatio = vw / vh;
+      const targetRatio = targetW / targetH;
       let sx, sy, sw, sh;
 
-      if(videoRatio > targetRatio){
-        sh = vh; sw = sh*targetRatio; sx = (vw-sw)/2; sy=0;
+      if (videoRatio > targetRatio) {
+        sh = vh;
+        sw = sh * targetRatio;
+        sx = (vw - sw) / 2;
+        sy = 0;
       } else {
-        sw = vw; sh = sw/targetRatio; sx=0; sy=(vh-sh)/2;
+        sw = vw;
+        sh = sw / targetRatio;
+        sx = 0;
+        sy = (vh - sh) / 2;
       }
 
       ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
@@ -245,5 +250,6 @@
 
     startCamera();
   </script>
+
 </body>
 </html>
