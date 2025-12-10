@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Feito</title>
+  <title>Feito BRILHOS</title>
 
   <style>
     html, body {
@@ -125,15 +125,15 @@
     function animarBrilhos(ctx) {
       brilhos.forEach((brilho) => {
         ctx.beginPath();
-        ctx.arc(brilho.x * (canvas.width / 100), brilho.y * (canvas.height / 100), brilho.size, 0, Math.PI * 2);
+        ctx.arc(brilho.x * (ctx.canvas.width / 100), brilho.y * (ctx.canvas.height / 100), brilho.size, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255, 255, 255, ${brilho.opacity})`; // Cor branca com opacidade
         ctx.fill();
       });
     }
 
     // Função para começar a câmera
-    async function startCamera(){
-      if(stream){
+    async function startCamera() {
+      if (stream) {
         stream.getTracks().forEach(t => t.stop());
       }
 
@@ -159,9 +159,9 @@
       animarBrilhos(ctx);
     }
 
-    function waitForVideoReady(){
+    function waitForVideoReady() {
       return new Promise(resolve => {
-        if(video.readyState >= 2 && video.videoWidth > 0){
+        if (video.readyState >= 2 && video.videoWidth > 0) {
           resolve();
           return;
         }
@@ -208,17 +208,11 @@
       canvas.height = targetH;
       const ctx = canvas.getContext("2d");
 
-      // Canvas temporário para a câmera
-      const buffer = document.createElement("canvas");
-      buffer.width = targetW;
-      buffer.height = targetH;
-      const btx = buffer.getContext("2d");
-
-      // Desenha o vídeo no buffer
-      btx.save();
+      // Desenha o vídeo no canvas final
+      ctx.save();
       if (usingFront) {
-        btx.translate(targetW, 0);
-        btx.scale(-1, 1);
+        ctx.translate(targetW, 0);
+        ctx.scale(-1, 1);
       }
 
       const videoRatio = vw / vh;
@@ -238,8 +232,8 @@
         sy = (vh - sh) / 2;
       }
 
-      btx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
-      btx.restore();
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+      ctx.restore();
 
       // Desenha a moldura
       if (usingFrame2) {
