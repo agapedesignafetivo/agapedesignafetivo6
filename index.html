@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Câmera com LUT e Moldura</title>
+  <title>Feito por Criis</title>
 
   <style>
     html, body {
@@ -24,15 +24,16 @@
       background: black;
     }
 
-    canvas {
+    video {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
+      background: black;
     }
 
-    #frame {
+    #frame, #frame2, #kiraCanvas {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -50,181 +51,167 @@
       z-index: 20;
     }
 
-    .icon-btn {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      cursor: pointer;
-      object-fit: cover;
-      border: none;
-      background: none;
-      padding: 0;
-      transition: transform 0.2s;
-    }
-
-    .icon-btn:hover { transform: scale(1.1); }
+button {
+    padding: 8px 16px;
+    border: 2px solid red;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    background: white;
+    color: black;
+    cursor: pointer;
+    text-align: center;
+  }
 
     #download { display: none; }
   </style>
 </head>
 <body>
 
-<div id="camera-wrap">
-  <video id="video" autoplay playsinline muted style="display:none;"></video>
-  <canvas id="canvas"></canvas>
-  <img id="frame" src="moldura.png">
-</div>
+  <div id="camera-wrap">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="kiraCanvas"></canvas>
+    <img id="frame" src="moldura.png">
+    <img id="frame2" src="moldura2.png" style="display:none;">
+  </div>
 
-<div id="buttons">
-  <img id="switchBtn" class="icon-btn" src="trocarcamera.png" title="Trocar câmera">
-  <img id="snapBtn" class="icon-btn" src="tirarfoto.png" title="Tirar Foto">
-</div>
+  <div id="buttons">
+    <button id="switchBtn">Trocar câmera 🔄</button>
+    <button id="snapBtn">Tirar Foto 📸</button>
+    <button id="switchFrameBtn">Trocar Moldura 🖼️</button>
+  </div>
 
-<a id="download" download="fotomoldurapersonalizada.png"></a>
+  <a id="download" download="fotomoldurapersonalizada.png"></a>
 
-<script type="module">
-  import * as twgl from 'https://cdn.jsdelivr.net/npm/twgl.js@4.21.3/dist/4.x/twgl-full.module.js';
+  <script>
+    const video = document.getElementById("video");
+    const frame = document.getElementById("frame");
+    const frame2 = document.getElementById("frame2");
+    const snapBtn = document.getElementById("snapBtn");
+    const switchBtn = document.getElementById("switchBtn");
+    const switchFrameBtn = document.getElementById("switchFrameBtn");
+    const download = document.getElementById("download");
 
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  const ctx2d = canvas.getContext('2d');
-  const frame = document.getElementById('frame');
-  const snapBtn = document.getElementById('snapBtn');
-  const switchBtn = document.getElementById('switchBtn');
-  const download = document.getElementById('download');
+    const kiraCanvas = document.getElementById("kiraCanvas");
+    const kctx = kiraCanvas.getContext("2d");
 
-  let usingFront = true;
-  let stream = null;
+    let kiraFrames = [];
+    let kiraLoaded = false;
+    let currentKiraFrame = 0;
 
-  // Carregar LUT primeiro
-  const lutImg = new Image();
-  lutImg.src = "lut.png"; // <- seu LUT
-  let lutLoaded = false;
-  lutImg.onload = () => {
-    lutLoaded = true;
-    console.log("LUT carregado!");
-    startCamera(); // só inicia a câmera depois que o LUT carregar
-  }
+    let stream = null;
+    let usingFront = true;
+    let usingFrame2 = false;
 
-  async function startCamera() {
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    const constraints = { video: { facingMode: usingFront ? "user" : "environment" } };
-    try {
+    async function loadKiraFrames() {
+      const totalFrames = 10;
+
+      for (let i = 0; i < totalFrames; i++) {
+        const img = new Image();
+        img.src = `kira/${String(i).padStart(3, "0")}.jpg`;
+        await new Promise(res => img.onload = res);
+        kiraFrames.push(img);
+      }
+
+      kiraLoaded = true;
+      animateKira();
+    }
+
+    function animateKira() {
+      if (!kiraLoaded) return;
+
+      kiraCanvas.width = window.innerWidth;
+      kiraCanvas.height = window.innerHeight;
+
+      kctx.clearRect(0, 0, kiraCanvas.width, kiraCanvas.height);
+      kctx.drawImage(kiraFrames[currentKiraFrame], 0, 0, kiraCanvas.width, kiraCanvas.height);
+
+      currentKiraFrame = (currentKiraFrame + 1) % kiraFrames.length;
+
+      requestAnimationFrame(animateKira);
+    }
+
+    async function startCamera(){
+      if(stream){
+        stream.getTracks().forEach(t => t.stop());
+      }
+
+      const constraints = {
+        video: { facingMode: usingFront ? "user" : "environment" }
+      };
+
       stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
-    } catch(e) {
-      alert("Não foi possível acessar a câmera: " + e.message);
-      return;
+
+      video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
     }
 
-    video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
-
-    await new Promise(r => video.onloadedmetadata = r);
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    drawLoop();
-  }
-
-  switchBtn.addEventListener('click', () => {
-    usingFront = !usingFront;
-    startCamera();
-  });
-
-  // --- WebGL LUT setup ---
-  const gl = canvas.getContext('webgl');
-  if(!gl){ alert("WebGL não disponível"); }
-
-  let programInfo, bufferInfo, textureVideo, textureLUT;
-
-  const vertexShaderSrc = `
-    attribute vec4 position;
-    attribute vec2 texcoord;
-    varying vec2 v_texcoord;
-    void main() {
-      gl_Position = position;
-      v_texcoord = texcoord;
-    }
-  `;
-
-  const fragmentShaderSrc = `
-    precision mediump float;
-    varying vec2 v_texcoord;
-    uniform sampler2D u_video;
-    uniform sampler2D u_lut;
-    void main() {
-      vec4 color = texture2D(u_video, v_texcoord);
-      float blueColor = color.b * 63.0;
-
-      vec2 quad1;
-      quad1.y = floor(floor(blueColor) / 8.0);
-      quad1.x = floor(blueColor) - (quad1.y * 8.0);
-
-      vec2 quad2;
-      quad2.y = floor(ceil(blueColor) / 8.0);
-      quad2.x = ceil(blueColor) - (quad2.y * 8.0);
-
-      vec2 texPos1;
-      texPos1.x = (quad1.x * 0.125) + 0.5/512.0 + ((color.r) * 0.125);
-      texPos1.y = (quad1.y * 0.125) + 0.5/512.0 + ((color.g) * 0.125);
-
-      vec2 texPos2;
-      texPos2.x = (quad2.x * 0.125) + 0.5/512.0 + ((color.r) * 0.125);
-      texPos2.y = (quad2.y * 0.125) + 0.5/512.0 + ((color.g) * 0.125);
-
-      vec4 newColor1 = texture2D(u_lut, texPos1);
-      vec4 newColor2 = texture2D(u_lut, texPos2);
-
-      float mixBlue = fract(blueColor);
-      gl_FragColor = mix(newColor1, newColor2, mixBlue);
-      gl_FragColor.a = 1.0;
-    }
-  `;
-
-  function setupGL() {
-    programInfo = twgl.createProgramInfo(gl, [vertexShaderSrc, fragmentShaderSrc]);
-    bufferInfo = twgl.createBufferInfoFromArrays(gl, {
-      position: [-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1],
-      texcoord: [0,0, 1,0, 0,1, 0,1, 1,0, 1,1]
+    switchBtn.addEventListener("click", () => {
+      usingFront = !usingFront;
+      startCamera();
     });
 
-    textureVideo = twgl.createTexture(gl, { width: 1, height:1, min: gl.LINEAR });
-    textureLUT = twgl.createTexture(gl, { src: lutImg, min: gl.LINEAR });
-  }
+    switchFrameBtn.addEventListener("click", () => {
+      usingFrame2 = !usingFrame2;
+      frame.style.display = usingFrame2 ? "none" : "block";
+      frame2.style.display = usingFrame2 ? "block" : "none";
+    });
 
-  function drawLoop() {
-    if (!lutLoaded) {
-      requestAnimationFrame(drawLoop);
-      return;
-    }
+    snapBtn.addEventListener("click", async () => {
 
-    twgl.resizeCanvasToDisplaySize(gl.canvas);
-    gl.viewport(0,0,gl.canvas.width, gl.canvas.height);
+      const targetW = 720;
+      const targetH = 1280;
 
-    gl.bindTexture(gl.TEXTURE_2D, textureVideo);
-    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,video);
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d");
 
-    gl.useProgram(programInfo.program);
-    twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-    twgl.setUniforms(programInfo, { u_video: textureVideo, u_lut: textureLUT });
-    twgl.drawBufferInfo(gl, bufferInfo);
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
 
-    // Desenhar moldura no topo
-    ctx2d.clearRect(0,0,canvas.width,canvas.height);
-    ctx2d.drawImage(canvas,0,0);
-    ctx2d.drawImage(frame,0,0,canvas.width,canvas.height);
+      ctx.save();
+      if (usingFront) {
+        ctx.translate(targetW, 0);
+        ctx.scale(-1, 1);
+      }
 
-    requestAnimationFrame(drawLoop);
-  }
+      const videoRatio = vw / vh;
+      const targetRatio = targetW / targetH;
 
-  snapBtn.addEventListener('click', () => {
-    const img = canvas.toDataURL('image/png');
-    download.href = img;
-    download.click();
-  });
+      let sx, sy, sw, sh;
+      if (videoRatio > targetRatio) {
+        sh = vh;
+        sw = sh * targetRatio;
+        sx = (vw - sw) / 2;
+        sy = 0;
+      } else {
+        sw = vw;
+        sh = sw / targetRatio;
+        sx = 0;
+        sy = (vh - sh) / 2;
+      }
 
-  setupGL();
-</script>
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+      ctx.restore();
+
+      const randomFrame = kiraFrames[Math.floor(Math.random() * kiraFrames.length)];
+      ctx.drawImage(randomFrame, 0, 0, targetW, targetH);
+
+      if (usingFrame2) {
+        ctx.drawImage(frame2, 0, 0, targetW, targetH);
+      } else {
+        ctx.drawImage(frame, 0, 0, targetW, targetH);
+      }
+
+      const img = canvas.toDataURL("image/png");
+      download.href = img;
+      download.click();
+    });
+
+    startCamera();
+    loadKiraFrames();
+  </script>
 
 </body>
 </html>
