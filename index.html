@@ -96,11 +96,26 @@
   let usingFront = true;
   let stream = null;
 
+  // Carregar LUT primeiro
+  const lutImg = new Image();
+  lutImg.src = "lut.png"; // <- seu LUT
+  let lutLoaded = false;
+  lutImg.onload = () => {
+    lutLoaded = true;
+    console.log("LUT carregado!");
+    startCamera(); // só inicia a câmera depois que o LUT carregar
+  }
+
   async function startCamera() {
     if (stream) stream.getTracks().forEach(t => t.stop());
     const constraints = { video: { facingMode: usingFront ? "user" : "environment" } };
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+    } catch(e) {
+      alert("Não foi possível acessar a câmera: " + e.message);
+      return;
+    }
 
     video.style.transform = usingFront ? "scaleX(-1)" : "scaleX(1)";
 
@@ -174,14 +189,18 @@
     });
 
     textureVideo = twgl.createTexture(gl, { width: 1, height:1, min: gl.LINEAR });
-    textureLUT = twgl.createTexture(gl, { src: 'lut.png', min: gl.LINEAR });
+    textureLUT = twgl.createTexture(gl, { src: lutImg, min: gl.LINEAR });
   }
 
   function drawLoop() {
+    if (!lutLoaded) {
+      requestAnimationFrame(drawLoop);
+      return;
+    }
+
     twgl.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0,0,gl.canvas.width, gl.canvas.height);
 
-    // atualizar vídeo
     gl.bindTexture(gl.TEXTURE_2D, textureVideo);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,video);
 
@@ -190,7 +209,7 @@
     twgl.setUniforms(programInfo, { u_video: textureVideo, u_lut: textureLUT });
     twgl.drawBufferInfo(gl, bufferInfo);
 
-    // desenhar moldura no topo
+    // Desenhar moldura no topo
     ctx2d.clearRect(0,0,canvas.width,canvas.height);
     ctx2d.drawImage(canvas,0,0);
     ctx2d.drawImage(frame,0,0,canvas.width,canvas.height);
@@ -205,7 +224,6 @@
   });
 
   setupGL();
-  startCamera();
 </script>
 
 </body>
