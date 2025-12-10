@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>BRILHOS 99</title>
+  <title>Feito</title>
 
   <style>
     html, body {
@@ -118,10 +118,11 @@
 
     // Função para criar brilhos giratórios dentro da área do vídeo
     function criarBrilho() {
-      // Brilho com movimento giratório
+      const maxRadius = Math.min(brilhosCanvas.width, brilhosCanvas.height) / 3; // Raio máximo para não sair da tela
+
       brilhos.push({
         angle: Math.random() * Math.PI * 2, // Ângulo inicial
-        radius: Math.random() * 40 + 40, // Raio do movimento circular
+        radius: Math.random() * maxRadius, // Raio do movimento circular dentro dos limites da tela
         speed: Math.random() * 0.02 + 0.03, // Velocidade de rotação
         size: Math.random() * 20 + 10, // Tamanho do brilho
         opacity: Math.random() * 0.5 + 0.5, // Opacidade
