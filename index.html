@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Feito 12222</title>
+  <title>Feito</title>
 
   <style>
     html, body {
@@ -194,8 +194,14 @@
 
       await waitForVideoReady();
 
-      brilhosCanvas.width = video.videoWidth;
-      brilhosCanvas.height = video.videoHeight;
+      // Garantir que o canvas esteja na orientação vertical (retrata)
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      brilhosCanvas.width = video.videoWidth * devicePixelRatio;
+      brilhosCanvas.height = video.videoHeight * devicePixelRatio;
+
+      // Escalar o canvas para o tamanho real
+      brilhosCanvas.style.width = '100%';
+      brilhosCanvas.style.height = '100%';
 
       // Inicializa os brilhos
       for (let i = 0; i < MAX_BRILHOS; i++) {
