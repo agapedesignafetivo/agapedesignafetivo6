@@ -110,7 +110,7 @@
     let usingFrame2 = false;
 
     let brilhos = [];
-    
+
     // Função para criar a partícula de brilho com a imagem
     function criarBrilho() {
       const brilho = document.createElement("div");
@@ -136,15 +136,15 @@
         element: brilho,
         top: parseFloat(brilho.style.top),
         left: parseFloat(brilho.style.left),
-        dx: (Math.random() - 0.5) * 2, // Velocidade horizontal
-        dy: (Math.random() - 0.5) * 2, // Velocidade vertical
+        dx: (Math.random() - 0.5) * 0.2, // Velocidade horizontal reduzida
+        dy: (Math.random() - 0.5) * 0.2, // Velocidade vertical reduzida
         size: size
       });
     }
 
     // Função para remover brilhos antigos (quando atingem o limite)
     function removerBrilhos() {
-      if (brilhos.length > 100) { // Se o número de brilhos for maior que 100, remove os antigos
+      if (brilhos.length > 50) { // Reduzindo a quantidade de brilhos na tela
         const brilhoRemovido = brilhos.shift();
         brilhoRemovido.element.remove();
       }
@@ -165,8 +165,10 @@
         brilho.element.style.top = `${brilho.top}%`;
         brilho.element.style.left = `${brilho.left}%`;
 
-        // Cria partículas novas a cada intervalo
-        if (Math.random() < 0.03) criarBrilho();
+        // Cria partículas novas a cada intervalo (menos frequente)
+        if (Math.random() < 0.005) { // Menos partículas por vez
+          criarBrilho();
+        }
       });
 
       requestAnimationFrame(animarBrilhos);
@@ -223,7 +225,7 @@
     setInterval(() => {
       criarBrilho();
       removerBrilhos();
-    }, 200);  // Adiciona uma partícula a cada 200ms
+    }, 1000);  // Intervalo maior entre as partículas (reduzindo a quantidade)
 
     animarBrilhos(); // Começa a animação das partículas
 
