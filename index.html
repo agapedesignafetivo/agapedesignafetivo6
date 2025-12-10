@@ -42,27 +42,26 @@
     }
 
     /* Aqui estamos configurando a camada de brilho */
-    #brilho {
+    .brilho {
       position: absolute;
-      top: 0;
-      left: 0;
       width: 50px;
       height: 50px;
       background-image: url('brilho.png'); /* Coloque o caminho da sua imagem de brilho */
       pointer-events: none;
-      animation: brilhar 1.5s infinite alternate;
+      opacity: 0; /* Começa invisível */
+      animation: brilhar 4s infinite alternate; /* Diminuímos o tempo para 4 segundos */
     }
 
     @keyframes brilhar {
       0% {
         top: 20%;
         left: 30%;
-        opacity: 0.5;
+        opacity: 0.2;
       }
       25% {
         top: 40%;
         left: 60%;
-        opacity: 0.8;
+        opacity: 0.6;
       }
       50% {
         top: 70%;
@@ -72,12 +71,12 @@
       75% {
         top: 80%;
         left: 10%;
-        opacity: 0.6;
+        opacity: 0.4;
       }
       100% {
         top: 50%;
         left: 80%;
-        opacity: 1;
+        opacity: 0.8;
       }
     }
 
@@ -116,7 +115,6 @@
     <video id="video" autoplay playsinline muted></video>
     <img id="frame" src="moldura.png">
     <img id="frame2" src="moldura2.png" style="display:none;"> <!-- Segunda moldura -->
-    <div id="brilho"></div> <!-- Camada de brilho -->
   </div>
 
   <div id="buttons">
@@ -131,11 +129,11 @@
     const video = document.getElementById("video");
     const frame = document.getElementById("frame");
     const frame2 = document.getElementById("frame2");
-    const brilho = document.getElementById("brilho");
     const snapBtn = document.getElementById("snapBtn");
     const switchBtn = document.getElementById("switchBtn");
     const switchFrameBtn = document.getElementById("switchFrameBtn");
     const download = document.getElementById("download");
+    const brilhoContainer = document.getElementById("camera-wrap");
 
     let stream = null;
     let usingFront = true;
@@ -187,8 +185,33 @@
       }
     });
 
-    snapBtn.addEventListener("click", async () => {
+    // Função para criar múltiplos brilhos
+    function criarBrilhos(qtd) {
+      for (let i = 0; i < qtd; i++) {
+        const brilho = document.createElement("div");
+        brilho.classList.add("brilho");
+        brilho.style.position = 'absolute';
+        brilho.style.width = '50px';
+        brilho.style.height = '50px';
+        brilho.style.backgroundImage = "url('brilho.png')";
+        brilho.style.pointerEvents = 'none';
+        brilho.style.opacity = 0; // Começa invisível
 
+        brilhoContainer.appendChild(brilho);
+
+        // Definir posições aleatórias para cada brilho
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+
+        brilho.style.top = `${top}%`;
+        brilho.style.left = `${left}%`;
+      }
+    }
+
+    // Cria 10 brilhos (você pode ajustar o número)
+    criarBrilhos(10);
+
+    snapBtn.addEventListener("click", async () => {
       await waitForVideoReady();
 
       const vw = video.videoWidth;
@@ -245,9 +268,6 @@
       } else {
         ctx.drawImage(frame, 0, 0, targetW, targetH);
       }
-
-      // --- DESENHA O BRILHO ---
-      ctx.drawImage(brilho, Math.random() * targetW, Math.random() * targetH, 50, 50);
 
       // Salvar
       const img = canvas.toDataURL("image/png");
