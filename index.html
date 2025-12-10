@@ -68,6 +68,15 @@
     }
 
     #download { display: none; }
+
+    /* Definição do estilo das partículas de brilho */
+    .brilho {
+      position: absolute;
+      pointer-events: none;
+      background-size: contain; /* Ajusta a imagem dentro da partícula */
+      background-repeat: no-repeat;
+      transition: all 0.3s ease-out;
+    }
   </style>
 </head>
 <body>
@@ -101,21 +110,24 @@
     let usingFrame2 = false;
 
     let brilhos = [];
-
-    // Função para criar partículas de brilho
+    
+    // Função para criar a partícula de brilho com a imagem
     function criarBrilho() {
       const brilho = document.createElement("div");
       brilho.classList.add("brilho");
 
-      // Atributos de cada partícula de brilho
+      // Adiciona a imagem de brilho
+      brilho.style.backgroundImage = "url('brilho.png')"; // Coloque o caminho da sua imagem de brilho
+
+      // Definir o tamanho da partícula
       const size = Math.random() * 20 + 10;  // Tamanho aleatório entre 10 e 30px
       brilho.style.width = `${size}px`;
       brilho.style.height = `${size}px`;
+
+      // Inicializar a posição da partícula
       brilho.style.left = `${Math.random() * 100}%`;
       brilho.style.top = `${Math.random() * 100}%`;
       brilho.style.opacity = Math.random() * 0.5 + 0.5; // Opacidade aleatória
-      brilho.style.background = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.4})`;
-      brilho.style.transition = "all 0.3s ease-out";
 
       brilhoContainer.appendChild(brilho);
 
@@ -130,7 +142,7 @@
       });
     }
 
-    // Função para remover brilhos antigos
+    // Função para remover brilhos antigos (quando atingem o limite)
     function removerBrilhos() {
       if (brilhos.length > 100) { // Se o número de brilhos for maior que 100, remove os antigos
         const brilhoRemovido = brilhos.shift();
@@ -138,7 +150,7 @@
       }
     }
 
-    // Função para animar as partículas
+    // Função para animar as partículas de brilho
     function animarBrilhos() {
       brilhos.forEach((brilho, index) => {
         brilho.top += brilho.dy;
@@ -207,7 +219,7 @@
       }
     });
 
-    // Inicializa a animação dos brilhos
+    // Inicializa a animação das partículas
     setInterval(() => {
       criarBrilho();
       removerBrilhos();
